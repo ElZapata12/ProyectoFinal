@@ -1,137 +1,99 @@
-import java.util.Scanner;
+import javax.swing.*;
+import java.awt.*;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Random;
+import java.util.Scanner;
 
-public class Unidades {
-    Random random = new Random();
-    private int[] elementos;
-    private HashMap<Integer, Integer> combis;
-    private int frente;
-    private int fin;
-    private int tamanio;
-    private int capacidad;
-     private int totalRonda = 0;
+class Combi {
+    private int id;
+    private int paradaIndex;
 
-    public Unidades(int capacidad) {
-        elementos = new int[capacidad];
-        frente = 0;
-        fin = -1;
-        tamanio = 0;
-        this.capacidad = capacidad;
-        combis = new HashMap<>();
+    public Combi(int id) {
+        this.id = id;
+        this.paradaIndex = 0; // Inicialmente en la parada 0
     }
 
-    public boolean estaLlena() {
-        return tamanio == capacidad;
+    public int getId() {
+        return id;
     }
 
-    public boolean estaVacia() {
-        return tamanio == 0;
+    public int getParadaIndex() {
+        return paradaIndex;
     }
 
-    public void encolar(int elemento) {
-        if (estaLlena()) {
-            System.out.println("La cola está llena");
-            return;
-        }
-        fin = (fin + 1) % elementos.length;
-        elementos[fin] = elemento;
-        combis.put(elemento, 0);
-        tamanio++;
-    }
-    public int desencolar() {
-        if (estaVacia()) {
-            System.out.println("Aún no hay combis trabajando");
-            return -1;
-        }
-        int elemento = elementos[frente];
-        frente = (frente + 1) % elementos.length;
-        tamanio--;
-        return elemento;
+    public void setParadaIndex(int paradaIndex) {
+        this.paradaIndex = paradaIndex;
     }
 
-    public void simulacion() {
-        int numRondas = 5;
-        for (int ronda = 1; ronda <= numRondas; ronda++) {
-            System.out.println("Ronda " + ronda + ":");
+    @Override
+    public String toString() {
+        return "Combi " + id + " está en: " + PARADAS[paradaIndex];
+    }
 
-            for (int i = 0; i < tamanio; i++) {
-                int index = (frente + i) % elementos.length;
-                int valorAleatorio = random.nextInt(10) + 1;
-                totalRonda += valorAleatorio;
-                int combiId = elementos[index];
-                combis.put(combiId, combis.get(combiId) + valorAleatorio);
-                System.out.println("Combi " + combiId + ", Valor Aleatorio = " + valorAleatorio);
+    public static final String[] PARADAS = {
+            "Base Teziutlán",
+            "La palma",
+            "Plan de Edén",
+            "Bodega ahorrará",
+            "Ahuateno",
+            "San diego",
+            "IES",
+            "La estación",
+            "Las tres cruces",
+            "La misma",
+            "Amila",
+            "Base de Tecnológico"
+    };
+}
+
+class Circuito {
+    private HashMap<Integer, Combi> combis; // Mapa de combis
+    private Queue<Integer> cola; // Cola para el procesamiento de combis
+    private Random random;
+
+    public Circuito() {
+        this.combis = new HashMap<>();
+        this.cola = new LinkedList<>();
+        this.random = new Random();
+    }
+
+    public void agregarCombi(int id) {
+        Combi combi = new Combi(id);
+        combis.put(id, combi); // Agregar la combi al HashMap
+        cola.offer(id); // Agregar la ID de la combi a la cola
+    }
+
+    public void simularRonda() {
+        int size = cola.size();
+        for (int i = 0; i < size; i++) {
+            Integer idCombi = cola.poll();
+            Combi combi = combis.get(idCombi);
+
+            if (combi != null) {
+                int valorAleatorio = random.nextInt(3) + 1;
+                int nuevaParada = combi.getParadaIndex() + valorAleatorio;
+
+                // Si la combi llega a la última parada, se elimina del HashMap y de la cola
+                if (nuevaParada < Combi.PARADAS.length) {
+                    combi.setParadaIndex(nuevaParada);
+                    cola.offer(idCombi);
+                } else {
+                    System.out.println("Combi " + combi.getId() + " ha llegado a su destino final y ha sido desencolada.");
+                    combis.remove(idCombi);
+                }
             }
-            System.out.println("Total acumulado de la ronda " + ronda + ": " + totalRonda);
-            System.out.println("Total acumulado por combi:");
-            for (Integer combi : combis.keySet()) {
-                System.out.println("Combi " + combi + ": " + combis.get(combi));
-            }
-
-
-            System.out.print("Presione Enter para continuar a la siguiente ronda...");
-            Scanner scanner = new Scanner(System.in);
-            scanner.nextLine();
         }
-        System.out.println("Simulación finalizada.");
-    }
-    public void mostrarCola() {
-        if (estaVacia()) {
-            System.out.println("Aún no hay combis trabajando.");
-            return;
-        }
-        System.out.print("Combis Trabajando (" + tamanio + "/" + capacidad + "): ");
-        for (int i = 0; i < tamanio; i++) {
-            int index = (frente + i) % elementos.length;
-            System.out.print(elementos[index] + " ");
-        }
-        System.out.println();
     }
 
-    public static void gestionarCola() {
-        Scanner sc = new Scanner(System.in);
-        System.out.print("Combis dadas de alta: ");
-        int capacidad = sc.nextInt();
-        Unidades unidades = new Unidades(capacidad);
-
-        int opcion;
-        do {
-            System.out.println("\nMenú Cola de Boletos:");
-            System.out.println("1. Empezar recorrido de combi");
-            System.out.println("2. Termino de recorrido de combi");
-            System.out.println("3. Mostrar Combis en recorrido");
-            System.out.print("Seleccione una opción: ");
-            opcion = sc.nextInt();
-
-            switch (opcion) {
-                case 1:
-                    if (unidades.estaLlena()) {
-                        System.out.println("Ya están todas las combis en el recorrido, empezando simulación...");
-                        unidades.simulacion();
-                    } else {
-                        System.out.print("No. de Combi: ");
-                        int cliente = sc.nextInt();
-                        unidades.encolar(cliente);
-                        System.out.println("Combi " + cliente + " en recorrido.");
-                    }
-                    break;
-                case 2:
-                    int desencolado = unidades.desencolar();
-                    if (desencolado != -1) {
-                        System.out.println("La combi " + desencolado + " ha llegado a la base.");
-                    }
-                    break;
-                case 3:
-                    unidades.mostrarCola();
-                    break;
-                default:
-                    System.out.println("Opción no válida.");
-            }
-        } while (opcion != 4);
+    public void mostrarCombis() {
+        for (Combi combi : combis.values()) {
+            System.out.println(combi);
+        }
     }
 
-    public static void main(String[] args) {
-        gestionarCola();
+    public HashMap<Integer, Combi> getCombis() {
+        return combis;
     }
 }
